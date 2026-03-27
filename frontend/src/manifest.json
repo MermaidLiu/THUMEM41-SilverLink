@@ -1,0 +1,16 @@
+{
+  "name": "SilverLink AI",
+  "appid": "",
+  "description": "医患沟通辅助",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false
+    },
+    "usingComponents": true
+  },
+  "vueVersion": "3"
+}

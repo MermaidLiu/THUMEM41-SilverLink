@@ -1,0 +1,52 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "SilverLink AI"
+      }
+    },
+    {
+      "path": "pages/patient/home",
+      "style": {
+        "navigationBarTitleText": "开始问诊"
+      }
+    },
+    {
+      "path": "pages/patient/symptom",
+      "style": {
+        "navigationBarTitleText": "症状描述"
+      }
+    },
+    {
+      "path": "pages/patient/history",
+      "style": {
+        "navigationBarTitleText": "病史采集"
+      }
+    },
+    {
+      "path": "pages/patient/confirm",
+      "style": {
+        "navigationBarTitleText": "确认提交"
+      }
+    },
+    {
+      "path": "pages/doctor/list",
+      "style": {
+        "navigationBarTitleText": "候诊患者"
+      }
+    },
+    {
+      "path": "pages/doctor/detail",
+      "style": {
+        "navigationBarTitleText": "患者详情"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "SilverLink AI",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f1f5f9"
+  }
+}
