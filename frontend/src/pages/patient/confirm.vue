@@ -1,11 +1,23 @@
 <script setup lang="ts">
+import { onShow } from "@dcloudio/uni-app";
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import LangSwitcher from "@/components/LangSwitcher.vue";
 import { apiPost } from "@/utils/api";
+import { ensurePatient } from "@/utils/auth";
 import type { IntakeDraft } from "@/utils/intake";
 import { clearDraft, loadDraft, saveDraft } from "@/utils/intake";
+import { useNavTitle } from "@/utils/useNavTitle";
+
+const { t } = useI18n();
+useNavTitle("nav.confirm");
 
 const draft = ref<IntakeDraft>(loadDraft());
 const submitting = ref(false);
+
+onShow(() => {
+  ensurePatient();
+});
 
 function persist() {
   saveDraft(draft.value);
@@ -13,14 +25,14 @@ function persist() {
 
 const readBack = computed(() => {
   if (draft.value.read_back_text.trim()) return draft.value.read_back_text;
-  const t = draft.value.transcript.trim();
+  const t0 = draft.value.transcript.trim();
   const locs = draft.value.pain_locations
-    .map((p) => `${p.body_part} ${p.severity}/10（${p.pain_type}）`)
-    .join("；");
-  const past = draft.value.past_medical_history.join("、") || "未勾选";
+    .map((p) => `${p.body_part} ${p.severity}/10 (${p.pain_type})`)
+    .join("; ");
+  const past = draft.value.past_medical_history.join(", ") || "—";
   const fam =
-    draft.value.family_history.map((f) => `${f.relation}${f.condition}`).join("；") || "未填写";
-  return `我们理解您的主要描述为：${t || "（未填写文字）"}。标注部位：${locs || "无"}。既往病史：${past}。家族史：${fam}。以上信息将交给医生参考，不作为诊断结论。`;
+    draft.value.family_history.map((f) => `${f.relation}: ${f.condition}`).join("; ") || "—";
+  return `[Auto] Chief: ${t0 || "—"}. Sites: ${locs || "—"}. PMH: ${past}. FH: ${fam}. Not a diagnosis.`;
 });
 
 function syncReadBack() {
@@ -45,15 +57,15 @@ async function submit() {
     const res = await apiPost<{ patient_id: string }>("/api/intake/submit", body);
     clearDraft();
     uni.showModal({
-      title: "已提交",
-      content: `登记号：${res.patient_id}，医生端可查看结构化摘要。`,
+      title: t("patient.confirm.okTitle"),
+      content: t("patient.confirm.okContent", { id: res.patient_id }),
       showCancel: false,
       success: () => {
-        uni.reLaunch({ url: "/pages/index/index" });
+        uni.reLaunch({ url: "/pages/patient/home" });
       },
     });
   } catch {
-    uni.showToast({ title: "提交失败，请检查网络与接口", icon: "none" });
+    uni.showToast({ title: t("patient.confirm.fail"), icon: "none" });
   } finally {
     submitting.value = false;
   }
@@ -61,67 +73,61 @@ async function submit() {
 </script>
 
 <template>
-  <view class="page">
-    <view class="card">
-      <text class="h">患者信息（可编辑）</text>
-      <input v-model="draft.patient_name" class="input" placeholder="姓名 / 称呼（可选）" @blur="persist" />
+  <view class="page sl-page">
+    <view class="top-bar">
+      <text class="lang-label">{{ t("lang.switch") }}</text>
+      <LangSwitcher />
     </view>
 
-    <view class="card">
-      <text class="h">AI 理解回读（P0：规则生成，可改）</text>
-      <textarea v-model="draft.read_back_text" class="area" :placeholder="readBack" @blur="persist" />
-      <button class="btn sm plain" @click="syncReadBack">用系统自动摘要填充</button>
+    <view class="sl-card">
+      <text class="sl-h">{{ t("patient.confirm.infoTitle") }}</text>
+      <view class="field-wrap">
+        <input v-model="draft.patient_name" class="sl-input-inner" :placeholder="t('patient.confirm.namePh')" @blur="persist" />
+      </view>
     </view>
 
-    <button class="btn primary" type="primary" :loading="submitting" @click="submit">确认提交</button>
+    <view class="sl-card">
+      <text class="sl-h">{{ t("patient.confirm.readTitle") }}</text>
+      <view class="field-wrap">
+        <textarea v-model="draft.read_back_text" class="sl-textarea tall" :placeholder="readBack" @blur="persist" />
+      </view>
+      <button class="btn-soft" @click="syncReadBack">{{ t("patient.confirm.fillBtn") }}</button>
+    </view>
+
+    <button class="sl-btn-primary" type="primary" :loading="submitting" @click="submit">{{ t("patient.confirm.submit") }}</button>
   </view>
 </template>
 
 <style lang="scss" scoped>
-.page {
-  padding: 24rpx 24rpx 48rpx;
-  box-sizing: border-box;
-}
-.card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 20rpx;
-  border: 1rpx solid #e2e8f0;
-}
-.h {
-  font-weight: 600;
+@import "@/uni.scss";
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12rpx;
   margin-bottom: 16rpx;
+}
+.lang-label {
+  font-size: 24rpx;
+  color: #6b21a8;
+  opacity: 0.85;
+}
+.field-wrap {
+  width: 100%;
   display: block;
-}
-.input {
-  width: 100%;
-  padding: 20rpx;
-  border: 1rpx solid #e2e8f0;
-  border-radius: 12rpx;
   box-sizing: border-box;
-  font-size: 28rpx;
 }
-.area {
-  width: 100%;
+.tall {
   min-height: 240rpx;
-  padding: 16rpx;
-  box-sizing: border-box;
-  border: 1rpx solid #e2e8f0;
-  border-radius: 12rpx;
-  font-size: 26rpx;
-  line-height: 1.5;
+  line-height: 1.55;
 }
-.btn {
+.btn-soft {
   margin-top: 16rpx;
-  border-radius: 16rpx;
-}
-.btn.sm {
+  border-radius: 20rpx;
   font-size: 26rpx;
-}
-.btn.plain {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: none;
+  background: rgba(167, 139, 250, 0.35);
+  color: #5b21b6;
+  border: 2rpx solid rgba(124, 58, 237, 0.25);
 }
 </style>

@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import { onLoad, ref } from "vue";
+import { onLoad, onShow } from "@dcloudio/uni-app";
+import { ref } from "vue";
+import { useI18n } from "vue-i18n";
+import LangSwitcher from "@/components/LangSwitcher.vue";
+import { getBodyLabel } from "@/locales/clinical";
 import { apiGet, apiPatch } from "@/utils/api";
+import { ensureDoctor } from "@/utils/auth";
+import { useNavTitle } from "@/utils/useNavTitle";
+
+const { t, locale } = useI18n();
+useNavTitle("nav.doctorDetail");
 
 interface Chief {
   summary?: string;
@@ -8,6 +17,8 @@ interface Chief {
   quality?: string;
   severity?: number | null;
   onset?: string;
+  aggravating?: string[];
+  relieving?: string[];
 }
 
 interface Fam {
@@ -41,6 +52,15 @@ onLoad((q) => {
   load();
 });
 
+onShow(() => {
+  ensureDoctor();
+});
+
+function formatLocs(loc: string[] | undefined) {
+  if (!loc?.length) return "—";
+  return loc.map((x) => getBodyLabel(locale.value, x)).join(" · ");
+}
+
 async function load() {
   if (!id.value) return;
   try {
@@ -48,7 +68,7 @@ async function load() {
     row.value = d;
     notes.value = d.doctor_notes || "";
   } catch {
-    uni.showToast({ title: "加载失败", icon: "none" });
+    uni.showToast({ title: t("doctor.detail.loadFail"), icon: "none" });
   }
 }
 
@@ -59,9 +79,9 @@ async function saveNotes() {
     await apiPatch(`/api/doctor/patients/${encodeURIComponent(id.value)}/notes`, {
       doctor_notes: notes.value,
     });
-    uni.showToast({ title: "已保存", icon: "success" });
+    uni.showToast({ title: t("doctor.detail.saveOk"), icon: "success" });
   } catch {
-    uni.showToast({ title: "保存失败", icon: "none" });
+    uni.showToast({ title: t("doctor.detail.saveFail"), icon: "none" });
   } finally {
     saving.value = false;
   }
@@ -69,90 +89,109 @@ async function saveNotes() {
 </script>
 
 <template>
-  <view v-if="row" class="page">
-    <view class="card">
-      <text class="h">患者</text>
-      <text class="line">{{ row.patient_id }} · {{ row.patient_name || "匿名" }}</text>
+  <view v-if="row" class="page sl-page">
+    <view class="top-bar">
+      <text class="lang-label">{{ t("lang.switch") }}</text>
+      <LangSwitcher />
     </view>
 
-    <view class="card key">
-      <text class="tag">结构化主诉（P0 卡片）</text>
+    <view class="sl-card">
+      <text class="sl-h">{{ t("doctor.detail.patient") }}</text>
+      <text class="line">{{ row.patient_id }} · {{ row.patient_name || t("doctor.detail.anon") }}</text>
+    </view>
+
+    <view class="sl-card key">
+      <text class="tag">{{ t("doctor.detail.cc") }}</text>
       <text v-if="row.chief_complaint?.summary" class="big">{{ row.chief_complaint.summary }}</text>
       <view class="grid">
         <view class="cell">
-          <text class="k">部位</text>
-          <text class="v">{{ (row.chief_complaint?.location || []).join("、") || "—" }}</text>
+          <text class="k">{{ t("doctor.detail.loc") }}</text>
+          <text class="v">{{ formatLocs(row.chief_complaint?.location) }}</text>
         </view>
         <view class="cell">
-          <text class="k">性质</text>
+          <text class="k">{{ t("doctor.detail.qual") }}</text>
           <text class="v">{{ row.chief_complaint?.quality || "—" }}</text>
         </view>
         <view class="cell">
-          <text class="k">程度</text>
+          <text class="k">{{ t("doctor.detail.sev") }}</text>
           <text class="v">{{ row.chief_complaint?.severity ?? "—" }}</text>
         </view>
         <view class="cell">
-          <text class="k">起病/时长</text>
+          <text class="k">{{ t("doctor.detail.onset") }}</text>
           <text class="v">{{ row.chief_complaint?.onset || "—" }}</text>
         </view>
       </view>
-      <text v-if="row.transcript" class="raw">原文：{{ row.transcript }}</text>
+      <text v-if="(row.chief_complaint?.aggravating || []).length" class="line sub">
+        {{ t("doctor.detail.aggravate") }}：{{ (row.chief_complaint?.aggravating || []).join("、") }}
+      </text>
+      <text v-if="(row.chief_complaint?.relieving || []).length" class="line sub">
+        {{ t("doctor.detail.relieving") }}：{{ (row.chief_complaint?.relieving || []).join("、") }}
+      </text>
+      <text v-if="row.transcript" class="raw">{{ t("doctor.detail.raw") }}：{{ row.transcript }}</text>
     </view>
 
-    <view class="card">
-      <text class="h">病史摘要</text>
-      <text class="line">既往：{{ (row.past_medical_history || []).join("、") || "无" }}</text>
-      <text class="line">家族：{{ (row.family_history || []).map((f) => `${f.relation}-${f.condition}`).join("；") || "无" }}</text>
+    <view class="sl-card">
+      <text class="sl-h">{{ t("doctor.detail.hx") }}</text>
+      <text class="line">{{ t("doctor.detail.past") }}：{{ (row.past_medical_history || []).join("、") || t("doctor.detail.none") }}</text>
+      <text class="line">{{ t("doctor.detail.fam") }}：{{ (row.family_history || []).map((f) => `${f.relation}-${f.condition}`).join("；") || t("doctor.detail.none") }}</text>
     </view>
 
-    <view class="card">
-      <text class="h">AI 追问记录</text>
+    <view class="sl-card">
+      <text class="sl-h">{{ t("doctor.detail.aiLog") }}</text>
       <view v-for="(m, i) in row.ai_conversation_log || []" :key="i" class="log">
-        <text class="who">{{ m.role === "ai" ? "助手" : "患者" }}</text>
+        <text class="who">{{ m.role === "ai" ? t("doctor.detail.ai") : t("doctor.detail.pat") }}</text>
         <text class="txt">{{ m.content }}</text>
       </view>
     </view>
 
-    <view class="card">
-      <text class="h">医生笔记</text>
-      <textarea v-model="notes" class="area" placeholder="接诊记录、鉴别思路等" />
-      <button class="btn" type="primary" :loading="saving" @click="saveNotes">保存笔记</button>
+    <view class="sl-card">
+      <text class="sl-h">{{ t("doctor.detail.notes") }}</text>
+      <view class="field-wrap">
+        <textarea v-model="notes" class="sl-textarea note" :placeholder="t('doctor.detail.notesPh')" />
+      </view>
+      <button class="sl-btn-primary" type="primary" :loading="saving" @click="saveNotes">{{ t("doctor.detail.save") }}</button>
     </view>
   </view>
 </template>
 
 <style lang="scss" scoped>
-.page {
-  padding: 24rpx 24rpx 48rpx;
+@import "@/uni.scss";
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+.lang-label {
+  font-size: 24rpx;
+  color: #6b21a8;
+  opacity: 0.85;
+}
+.field-wrap {
+  width: 100%;
+  display: block;
   box-sizing: border-box;
 }
-.card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 16rpx;
-  border: 1rpx solid #e2e8f0;
-}
-.card.key {
-  border-color: #bfdbfe;
-  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 40%);
-}
-.h {
-  font-weight: 700;
-  margin-bottom: 12rpx;
-  display: block;
+
+.key {
+  border-color: rgba(167, 139, 250, 0.55) !important;
+  background: linear-gradient(180deg, rgba(237, 233, 254, 0.95) 0%, rgba(255, 255, 255, 0.55) 45%) !important;
 }
 .tag {
   font-size: 22rpx;
-  color: #1d4ed8;
+  color: #6d28d9;
   margin-bottom: 8rpx;
   display: block;
+  font-weight: 600;
 }
 .big {
   font-size: 30rpx;
   line-height: 1.5;
   display: block;
   margin-bottom: 16rpx;
+  color: #312e81;
 }
 .grid {
   display: flex;
@@ -161,61 +200,61 @@ async function saveNotes() {
 }
 .cell {
   width: 47%;
-  background: #f8fafc;
-  border-radius: 12rpx;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 16rpx;
   padding: 12rpx 16rpx;
   box-sizing: border-box;
+  border: 2rpx solid rgba(167, 139, 250, 0.25);
 }
 .k {
   font-size: 22rpx;
-  color: #64748b;
+  color: #6b21a8;
   display: block;
 }
 .v {
   font-size: 26rpx;
   margin-top: 4rpx;
   display: block;
+  color: #312e81;
 }
 .raw {
   margin-top: 16rpx;
   font-size: 24rpx;
-  color: #64748b;
+  color: #5b21b6;
   line-height: 1.5;
   display: block;
+  opacity: 0.88;
 }
 .line {
   font-size: 26rpx;
   line-height: 1.6;
   display: block;
-  color: #334155;
+  color: #312e81;
+}
+.line.sub {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  opacity: 0.92;
 }
 .log {
   margin-bottom: 12rpx;
   padding: 12rpx 16rpx;
-  background: #f8fafc;
-  border-radius: 12rpx;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(167, 139, 250, 0.2);
 }
 .who {
   font-size: 22rpx;
-  color: #64748b;
+  color: #7c3aed;
   display: block;
   margin-bottom: 4rpx;
 }
 .txt {
   font-size: 26rpx;
   line-height: 1.5;
+  color: #312e81;
 }
-.area {
-  width: 100%;
+.note {
   min-height: 160rpx;
-  padding: 16rpx;
-  box-sizing: border-box;
-  border: 1rpx solid #e2e8f0;
-  border-radius: 12rpx;
-  font-size: 26rpx;
-}
-.btn {
-  margin-top: 16rpx;
-  border-radius: 12rpx;
 }
 </style>

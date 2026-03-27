@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from .ai_followup import next_followup
+from .ai_followup import followup_response
 from .schemas import (
     ASRRequest,
     DoctorNotesPatch,
@@ -34,14 +34,14 @@ async def asr_transcribe(body: ASRRequest) -> dict[str, str]:
     """P0 mock ASR: returns client-provided simulated text or a demo sentence."""
     text = body.simulated_text.strip()
     if not text:
-        text = "我左边膝盖疼了大概三天，走路的时候更厉害。"
+        # 演示：不含具体部位，便于触发「语音引导 + 弹出身图点选」流程
+        text = "我也说不清哪里最难受，就是这两天整个人都不舒服。"
     return {"text": text}
 
 
 @app.post("/api/ai/follow-up")
-async def ai_follow_up(body: FollowUpRequest) -> dict[str, str]:
-    q = await next_followup(body)
-    return {"question": q}
+async def ai_follow_up(body: FollowUpRequest) -> dict[str, str | bool]:
+    return await followup_response(body)
 
 
 @app.post("/api/intake/submit", response_model=PatientRecord)

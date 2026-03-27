@@ -1,10 +1,47 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { FAMILY_CONDITIONS, FAMILY_RELATIONS, PAST_OPTIONS } from "@/constants/options";
+import { onShow } from "@dcloudio/uni-app";
+import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import LangSwitcher from "@/components/LangSwitcher.vue";
+import { getFamilyConditions, getFamilyRelations, getPastOptions } from "@/locales/clinical";
+import { ensurePatient } from "@/utils/auth";
 import type { FamilyItem, IntakeDraft } from "@/utils/intake";
 import { loadDraft, saveDraft } from "@/utils/intake";
+import { useNavTitle } from "@/utils/useNavTitle";
+
+const { t, locale } = useI18n();
+useNavTitle("nav.history");
 
 const draft = ref<IntakeDraft>(loadDraft());
+
+const PAST_OPTIONS = computed(() => getPastOptions(locale.value));
+const FAMILY_RELATIONS = computed(() => getFamilyRelations(locale.value));
+const FAMILY_CONDITIONS = computed(() => getFamilyConditions(locale.value));
+
+const famRel = ref("");
+const famCond = ref("");
+
+watch(
+  FAMILY_RELATIONS,
+  (arr) => {
+    if (!arr.length) return;
+    if (!famRel.value || !arr.includes(famRel.value)) famRel.value = arr[0];
+  },
+  { immediate: true }
+);
+
+watch(
+  FAMILY_CONDITIONS,
+  (arr) => {
+    if (!arr.length) return;
+    if (!famCond.value || !arr.includes(famCond.value)) famCond.value = arr[0];
+  },
+  { immediate: true }
+);
+
+onShow(() => {
+  ensurePatient();
+});
 
 function persist() {
   saveDraft(draft.value);
@@ -22,9 +59,6 @@ function isPast(label: string) {
   return draft.value.past_medical_history.includes(label);
 }
 
-const famRel = ref(FAMILY_RELATIONS[0]);
-const famCond = ref(FAMILY_CONDITIONS[0]);
-
 function addFamily() {
   const row: FamilyItem = { relation: famRel.value, condition: famCond.value };
   draft.value.family_history.push(row);
@@ -37,11 +71,13 @@ function removeFamily(i: number) {
 }
 
 function onPickRel(e: { detail: { value: string } }) {
-  famRel.value = FAMILY_RELATIONS[Number(e.detail.value)];
+  const arr = FAMILY_RELATIONS.value;
+  famRel.value = arr[Number(e.detail.value)] ?? arr[0];
 }
 
 function onPickCond(e: { detail: { value: string } }) {
-  famCond.value = FAMILY_CONDITIONS[Number(e.detail.value)];
+  const arr = FAMILY_CONDITIONS.value;
+  famCond.value = arr[Number(e.detail.value)] ?? arr[0];
 }
 
 function skip() {
@@ -55,9 +91,14 @@ function next() {
 </script>
 
 <template>
-  <view class="page">
-    <view class="card">
-      <text class="h">既往病史（多选）</text>
+  <view class="page sl-page">
+    <view class="top-bar">
+      <text class="lang-label">{{ t("lang.switch") }}</text>
+      <LangSwitcher />
+    </view>
+
+    <view class="sl-card">
+      <text class="sl-h">{{ t("patient.history.pastTitle") }}</text>
       <view class="chips">
         <view
           v-for="opt in PAST_OPTIONS"
@@ -70,8 +111,8 @@ function next() {
       </view>
     </view>
 
-    <view class="card">
-      <text class="h">家族病史</text>
+    <view class="sl-card">
+      <text class="sl-h">{{ t("patient.history.famTitle") }}</text>
       <view class="fam-row">
         <picker mode="selector" :range="FAMILY_RELATIONS" @change="onPickRel">
           <view class="picker half">{{ famRel }}</view>
@@ -79,37 +120,33 @@ function next() {
         <picker mode="selector" :range="FAMILY_CONDITIONS" @change="onPickCond">
           <view class="picker half">{{ famCond }}</view>
         </picker>
-        <button class="add" size="mini" type="primary" @click="addFamily">添加</button>
+        <button class="add" size="mini" type="primary" @click="addFamily">{{ t("patient.history.add") }}</button>
       </view>
       <view v-for="(f, i) in draft.family_history" :key="i" class="fam-item">
         <text>{{ f.relation }} · {{ f.condition }}</text>
-        <text class="del" @click="removeFamily(i)">删除</text>
+        <text class="del" @click="removeFamily(i)">{{ t("patient.history.del") }}</text>
       </view>
     </view>
 
     <view class="row-btns">
-      <button class="btn ghost" @click="skip">跳过</button>
-      <button class="btn primary" type="primary" @click="next">确认并继续</button>
+      <button class="sl-btn-ghost" @click="skip">{{ t("patient.history.skip") }}</button>
+      <button class="sl-btn-primary" type="primary" @click="next">{{ t("patient.history.next") }}</button>
     </view>
   </view>
 </template>
 
 <style lang="scss" scoped>
-.page {
-  padding: 24rpx 24rpx 48rpx;
-  box-sizing: border-box;
-}
-.card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 20rpx;
-  border: 1rpx solid #e2e8f0;
-}
-.h {
-  font-weight: 600;
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12rpx;
   margin-bottom: 16rpx;
-  display: block;
+}
+.lang-label {
+  font-size: 24rpx;
+  color: #6b21a8;
+  opacity: 0.85;
 }
 .chips {
   display: flex;
@@ -119,55 +156,60 @@ function next() {
 .chip {
   padding: 12rpx 20rpx;
   border-radius: 999rpx;
-  background: #f8fafc;
-  border: 1rpx solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.5);
+  border: 2rpx solid rgba(167, 139, 250, 0.35);
   font-size: 24rpx;
+  color: #312e81;
 }
 .chip.on {
-  background: #dbeafe;
-  border-color: #93c5fd;
-  color: #1e40af;
+  background: rgba(167, 139, 250, 0.45);
+  border-color: #7c3aed;
+  color: #4c1d95;
+  font-weight: 600;
 }
 .fam-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
-  align-items: center;
+  flex-direction: column;
+  gap: 16rpx;
+  align-items: stretch;
 }
 .picker {
-  padding: 16rpx 20rpx;
-  background: #f8fafc;
-  border-radius: 12rpx;
-  border: 1rpx solid #e2e8f0;
-  font-size: 26rpx;
+  flex: 1;
+  min-width: 0;
+  padding: 22rpx 24rpx;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(167, 139, 250, 0.35);
+  font-size: 30rpx;
+  line-height: 44rpx;
+  color: #312e81;
+  box-sizing: border-box;
+  min-height: 92rpx;
 }
 .picker.half {
-  min-width: 200rpx;
+  width: 100%;
 }
 .add {
-  margin-left: auto;
+  width: 100%;
+  margin-top: 4rpx;
 }
 .fam-item {
   display: flex;
   justify-content: space-between;
   padding: 16rpx 0;
-  border-bottom: 1rpx solid #f1f5f9;
+  border-bottom: 2rpx solid rgba(167, 139, 250, 0.2);
   font-size: 26rpx;
+  color: #312e81;
 }
 .del {
-  color: #dc2626;
+  color: #9333ea;
 }
 .row-btns {
   display: flex;
   gap: 16rpx;
   margin-top: 24rpx;
 }
-.row-btns .btn {
+.row-btns button {
   flex: 1;
-  border-radius: 16rpx;
-}
-.ghost {
-  background: #fff;
-  border: 1rpx solid #cbd5e1;
 }
 </style>

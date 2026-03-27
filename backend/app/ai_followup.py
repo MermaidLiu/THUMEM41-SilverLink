@@ -33,6 +33,25 @@ def _extract_aggravate(text: str) -> bool:
     return bool(re.search(r"走路|活动|站|蹲|加重|更疼", text))
 
 
+# 若用户已提到具体部位，则不必弹出身图
+_BODY_HINT = re.compile(
+    r"头|胸|腹|背|腰|膝|腿|臂|手腕|肩|脖子|胃|肚子|脚|手肘|髋|臀|"
+    r"knee|back|chest|head|stomach|belly|shoulder|neck|leg|arm|foot|hip"
+)
+
+
+def should_open_body_model(req: FollowUpRequest) -> bool:
+    """尚无结构化部位、且用户口述里也未出现明确部位时，建议弹出身图点选。"""
+    es = (req.existing_symptoms or "").strip()
+    if es and es not in ("—", "-", ""):
+        return False
+    utter = (req.user_input or "").strip()
+    if _BODY_HINT.search(utter):
+        return False
+    patient_turns = sum(1 for m in req.conversation_log if m.role == "patient")
+    return patient_turns >= 1
+
+
 def rule_based_question(req: FollowUpRequest) -> str:
     t = (req.user_input or "").strip()
     ctx = (req.existing_symptoms or "") + " " + t
@@ -87,3 +106,10 @@ async def next_followup(req: FollowUpRequest) -> str:
     except Exception:
         pass
     return rule_based_question(req)
+
+
+async def followup_response(req: FollowUpRequest) -> dict[str, str | bool]:
+    """追问文案 + 是否在前端弹出身图（由界面用语音文案配合展示）。"""
+    question = await next_followup(req)
+    open_body = should_open_body_model(req)
+    return {"question": question, "open_body_model": open_body}

@@ -1,10 +1,100 @@
-$uni-color-primary: #2563eb;
-$uni-color-success: #16a34a;
-$uni-color-warning: #d97706;
-$uni-color-error: #dc2626;
-$uni-text-color: #1e293b;
-$uni-text-color-grey: #64748b;
-$uni-bg-color-grey: #f1f5f9;
-$uni-border-color: #e2e8f0;
+$sl-purple-deep: #5b21b6;
+$sl-purple-mid: #7c3aed;
+$sl-purple-soft: #c4b5fd;
+$uni-color-primary: #7c3aed;
+$uni-text-color: #312e81;
+$uni-text-color-grey: #6b21a8;
+$uni-bg-color-grey: #ede9fe;
+$uni-border-color: rgba(167, 139, 250, 0.4);
 $uni-font-size-base: 14px;
 $uni-font-size-lg: 16px;
+
+.sl-page {
+  min-height: 100vh;
+  padding: 24rpx 24rpx 48rpx;
+  box-sizing: border-box;
+  background: linear-gradient(168deg, #ede9fe 0%, #fae8ff 40%, #ddd6fe 75%, #e9d5ff 100%);
+}
+
+.sl-card {
+  background: rgba(255, 255, 255, 0.42);
+  border: 2rpx solid rgba(255, 255, 255, 0.68);
+  border-radius: 28rpx;
+  padding: 28rpx;
+  margin-bottom: 22rpx;
+  box-shadow: 0 10rpx 40rpx rgba(109, 40, 217, 0.1);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.sl-h {
+  font-weight: 700;
+  color: #4c1d95;
+  margin-bottom: 16rpx;
+  display: block;
+  font-size: 30rpx;
+}
+
+/* 小程序 input 默认易过窄/裁字：强制占满行高与盒模型 */
+.sl-input-inner {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: 96rpx;
+  padding: 22rpx 28rpx;
+  box-sizing: border-box;
+  border-radius: 18rpx;
+  border: 2rpx solid rgba(167, 139, 250, 0.4);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 30rpx;
+  line-height: 44rpx;
+  color: #1e1b4b;
+}
+
+.sl-textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: 200rpx;
+  padding: 22rpx 28rpx;
+  box-sizing: border-box;
+  border-radius: 18rpx;
+  border: 2rpx solid rgba(167, 139, 250, 0.4);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 30rpx;
+  line-height: 1.65;
+  color: #1e1b4b;
+}
+
+.sl-btn-primary {
+  border-radius: 22rpx !important;
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%) !important;
+  border: none !important;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 10rpx 28rpx rgba(124, 58, 237, 0.35);
+}
+
+.sl-btn-ghost {
+  background: rgba(255, 255, 255, 0.55) !important;
+  color: #6d28d9 !important;
+  border: 2rpx solid rgba(167, 139, 250, 0.55) !important;
+  border-radius: 22rpx !important;
+}
+
+.sl-link {
+  background: transparent !important;
+  color: #6d28d9 !important;
+  border: none !important;
+  font-size: 26rpx;
+}
+
+.sl-bubble-me {
+  background: rgba(196, 181, 253, 0.55);
+  margin-left: 36rpx;
+}
+
+.sl-bubble-ai {
+  background: rgba(255, 255, 255, 0.55);
+  margin-right: 36rpx;
+}

@@ -13,3 +13,7 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+declare module "three";
+declare module "three/examples/jsm/controls/OrbitControls.js";
+declare module "threejs-miniprogram";

@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import threading
 
+from .demo_patients import merge_demo_patients
 from .schemas import ChiefComplaint, IntakeSubmit, PatientRecord
 
 _lock = threading.Lock()
@@ -28,6 +29,7 @@ def get_patient(pid: str) -> PatientRecord | None:
 
 def list_patients() -> list[PatientRecord]:
     with _lock:
+        merge_demo_patients(_patients)
         return list(_patients.values())
 
 

@@ -1,9 +1,9 @@
 {
   "pages": [
     {
-      "path": "pages/index/index",
+      "path": "pages/login/login",
       "style": {
-        "navigationBarTitleText": "SilverLink AI"
+        "navigationBarTitleText": "登录"
       }
     },
     {
@@ -46,7 +46,7 @@
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "SilverLink AI",
-    "navigationBarBackgroundColor": "#ffffff",
-    "backgroundColor": "#f1f5f9"
+    "navigationBarBackgroundColor": "#f5f3ff",
+    "backgroundColor": "#ede9fe"
   }
 }

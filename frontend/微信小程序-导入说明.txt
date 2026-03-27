@@ -1,0 +1,8 @@
+1. 在本目录执行：npm install   然后：npm run dev:mp-weixin
+2. 保持该命令运行（监听编译）。
+3. 打开微信开发者工具 → 导入项目 → 选择本目录下的：
+   dist\dev\mp-weixin
+   （不是 frontend 根目录，也不是 src）
+4. 若提示 AppID：可先用测试号，或在 src\manifest.json 的 mp-weixin.appid 填写你的小程序 AppID。
+5. 项目依赖 threejs-miniprogram（3D 人模）。若模拟器报找不到该包：在微信开发者工具中点击「工具 → 构建 npm」，并确认已在本目录执行过 npm install。
+6. 登录：患者账号 patient / 123456；医生 doctor 或 doc001 / 123456。

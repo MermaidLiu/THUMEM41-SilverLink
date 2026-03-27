@@ -11,6 +11,10 @@ export const BODY_PARTS: { id: string; label: string }[] = [
   { id: "right_ankle", label: "右踝" },
 ];
 
+export function labelForBodyPart(id: string): string {
+  return BODY_PARTS.find((b) => b.id === id)?.label ?? id;
+}
+
 export const PAIN_TYPES: { id: string; label: string }[] = [
   { id: "stabbing", label: "刺痛" },
   { id: "dull", label: "钝痛" },
